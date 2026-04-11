@@ -6,9 +6,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.ewicadev.personalvaultapi.dto.LoginRequest;
-import com.ewicadev.personalvaultapi.dto.SignupRequest;
-import com.ewicadev.personalvaultapi.entity.User;
+import com.ewicadev.personalvaultapi.dto.auth.LoginRequest;
+import com.ewicadev.personalvaultapi.dto.auth.SignupRequest;
+import com.ewicadev.personalvaultapi.dto.auth.SignupResponse;
+import com.ewicadev.personalvaultapi.dto.auth.LoginResponse;
 import com.ewicadev.personalvaultapi.service.AuthService;
 
 import jakarta.validation.Valid;
@@ -24,12 +25,12 @@ public class AuthController {
   }
 
   @PostMapping("/signup")
-  public ResponseEntity<User> signup(@Valid @RequestBody SignupRequest request) {
+  public ResponseEntity<SignupResponse> signup(@Valid @RequestBody SignupRequest request) {
     return ResponseEntity.ok(authService.register(request));
   }
 
   @PostMapping("/login")
-  public ResponseEntity<String> login(@Valid @RequestBody LoginRequest request) {
+  public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
     return ResponseEntity.ok(authService.login(request));
   }
 }

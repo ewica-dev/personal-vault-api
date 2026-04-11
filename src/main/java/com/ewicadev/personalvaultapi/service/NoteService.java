@@ -1,13 +1,16 @@
 package com.ewicadev.personalvaultapi.service;
 
 import java.util.List;
-import java.util.Optional;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
-import com.ewicadev.personalvaultapi.dto.NoteRequest;
+import com.ewicadev.personalvaultapi.dto.note.NoteRequest;
 import com.ewicadev.personalvaultapi.entity.Note;
+import com.ewicadev.personalvaultapi.exception.ResourceNotFoundException;
 import com.ewicadev.personalvaultapi.repository.NoteRepository;
+import com.ewicadev.personalvaultapi.util.HtmlSanitizerUtil;
 
 @Service
 public class NoteService {
@@ -18,40 +21,41 @@ public class NoteService {
       this.noteRepository = noteRepository;
   }
 
-  public Note createNote(NoteRequest request) {
+  public Note createNote(NoteRequest request, Long userId) {
     Note note = new Note();
-    note.setTitle(request.getTitle());
-    note.setContent(request.getContent());
+    note.setTitle(HtmlSanitizerUtil.sanitize(request.getTitle()));
+    note.setContent(HtmlSanitizerUtil.sanitize(request.getContent()));
+    note.setUserId(userId);
     
     return noteRepository.save(note);
   }
 
-  public Note updateNote(Long id, NoteRequest request) {
-    // Safely attempt to find the note first. 
-    // If it doesn't exist, throw an exception so the API doesn't crash silently.
-    Note existingNote = noteRepository.findById(id)
-        .orElseThrow(() -> new RuntimeException("Note not found with ID: " + id));
+  public Note updateNote(Long id, NoteRequest request, Long userId) {
+    Note existingNote = noteRepository.findByIdAndUserId(id, userId)
+        .orElseThrow(() -> new ResourceNotFoundException("Note not found with ID: " + id));
 
-    // Update only the fields we allow
-    existingNote.setTitle(request.getTitle());
-    existingNote.setContent(request.getContent());
+    existingNote.setTitle(HtmlSanitizerUtil.sanitize(request.getTitle()));
+    existingNote.setContent(HtmlSanitizerUtil.sanitize(request.getContent()));
 
     return noteRepository.save(existingNote);
   }
 
-  public List<Note> getAllNotes() {
-    return noteRepository.findAll();
+  public List<Note> getAllNotesByUser(Long userId) {
+    return noteRepository.findByUserId(userId);
   }
 
-  public Optional<Note> getNoteById(Long id) {
-    return noteRepository.findById(id);
+  public Page<Note> getNotesByUser(Long userId, Pageable pageable) {
+    return noteRepository.findByUserId(userId, pageable);
   }
 
-  // Delete: Verify it exists before trying to delete
-  public void deleteNote(Long id) {
-    if (!noteRepository.existsById(id)) {
-        throw new RuntimeException("Note not found with ID: " + id);
-    }
-    noteRepository.deleteById(id);
+  public Note getNoteById(Long id, Long userId) {
+    return noteRepository.findByIdAndUserId(id, userId)
+        .orElseThrow(() -> new ResourceNotFoundException("Note not found with ID: " + id));
+  }
+
+  public void deleteNote(Long id, Long userId) {
+    Note note = noteRepository.findByIdAndUserId(id, userId)
+        .orElseThrow(() -> new ResourceNotFoundException("Note not found with ID: " + id));
+    noteRepository.delete(note);
   }  
 }

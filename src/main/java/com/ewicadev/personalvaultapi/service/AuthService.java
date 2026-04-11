@@ -3,9 +3,13 @@ package com.ewicadev.personalvaultapi.service;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import com.ewicadev.personalvaultapi.dto.LoginRequest;
-import com.ewicadev.personalvaultapi.dto.SignupRequest;
+import com.ewicadev.personalvaultapi.dto.auth.LoginRequest;
+import com.ewicadev.personalvaultapi.dto.auth.LoginResponse;
+import com.ewicadev.personalvaultapi.dto.auth.SignupRequest;
+import com.ewicadev.personalvaultapi.dto.auth.SignupResponse;
 import com.ewicadev.personalvaultapi.entity.User;
+import com.ewicadev.personalvaultapi.exception.DuplicateResourceException;
+import com.ewicadev.personalvaultapi.exception.InvalidCredentialsException;
 import com.ewicadev.personalvaultapi.repository.UserRepository;
 
 @Service
@@ -25,28 +29,36 @@ public class AuthService {
     this.jwtService = jwtService;
   }
 
-  public User register(SignupRequest request) {
+  public SignupResponse register(SignupRequest request) {
     if (userRepository.findByEmail(request.getEmail()).isPresent()) {
-      throw new RuntimeException("Email already in use");
+      throw new DuplicateResourceException("Email already in use");
     }
 
     User user = new User();
     user.setEmail(request.getEmail());
-    // Hash the password before saving
     user.setPassword(passwordEncoder.encode(request.getPassword()));
 
-    return userRepository.save(user);
+    User savedUser = userRepository.save(user);
+    return new SignupResponse(
+      "User registered successfully",
+      savedUser.getId(),
+      savedUser.getEmail(),
+      savedUser.getCreatedAt()
+    );
   }
 
-  public String login(LoginRequest request) {
+  public LoginResponse login(LoginRequest request) {
     User user = userRepository.findByEmail(request.getEmail())
-      .orElseThrow(() -> new RuntimeException("Invalid email or password"));
+      .orElseThrow(() -> new InvalidCredentialsException("Invalid email or password"));
 
-    // Verify the raw password against the hashed one in the DB
     if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-      throw new RuntimeException("Invalid email or password");
+      throw new InvalidCredentialsException("Invalid email or password");
     }
 
-    return jwtService.generateToken(user.getEmail());
+    String token = jwtService.generateToken(user.getEmail());
+    return LoginResponse.builder()
+        .token(token)
+        .tokenType("Bearer")
+        .build();
   }
 }

@@ -27,6 +27,9 @@ public class Note {
   @Column(nullable = false, columnDefinition = "TEXT")
   private String content;
 
+  @Column(name = "user_id", nullable = false)
+  private Long userId;
+
   @Column(name = "created_at", nullable = false, updatable = false)
   private LocalDateTime createdAt;
 

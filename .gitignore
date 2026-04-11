@@ -41,3 +41,6 @@ src/main/resources/application.properties
 src/main/resources/application-local.properties
 .env
 .env.*
+
+### ai agent ###
+.kilo/
