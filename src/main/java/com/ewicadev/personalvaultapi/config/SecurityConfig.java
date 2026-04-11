@@ -16,10 +16,11 @@ public class SecurityConfig {
     http
         .csrf(csrf -> csrf.disable())
         .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/health").permitAll()
-                // TEMPORARY: Open the notes endpoints so you can test them in Postman
-                .requestMatchers("/api/v1/notes/**").permitAll()
-                .anyRequest().authenticated()
+          .requestMatchers("/api/v1/auth/**").permitAll()
+          // TEMPORARY: Open the notes endpoints so you can test them in Postman
+          .requestMatchers("/api/health").permitAll()          
+          .requestMatchers("/api/v1/notes/**").permitAll()
+          .anyRequest().authenticated()
         )
         .httpBasic(Customizer.withDefaults());
 
