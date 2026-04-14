@@ -7,9 +7,10 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
-      - "5432:5432"
+      - "5433:5432" 
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - personal_vault_postgres_data:/var/lib/postgresql/data
 
 volumes:
-  postgres_data:
+  # Give the volume a unique name so it doesn't overwrite your other project's data
+  personal_vault_postgres_data:
