@@ -73,24 +73,102 @@ class NoteServiceTest {
   }
 
   @Test
-  void createNoteSanitizesHtmlTagsStripped() {
-    noteRequest.setTitle("<script>alert('xss')</script>Test Title");
+  void createNotePreservesHtmlTags() {
+    noteRequest.setTitle("<script>alert('xss')</script> Title");
     noteRequest.setContent("<img onerror=alert(1) src=x>Test Content");
 
-    Note sanitizedNote = new Note();
-    sanitizedNote.setId(1L);
-    sanitizedNote.setTitle("Test Title");
-    sanitizedNote.setContent("Test Content");
-    sanitizedNote.setUserId(userId);
-    sanitizedNote.setCreatedAt(LocalDateTime.now());
-    sanitizedNote.setUpdatedAt(LocalDateTime.now());
+    Note resultNote = new Note();
+    resultNote.setId(1L);
+    resultNote.setTitle("<script>alert('xss')</script> Title");
+    resultNote.setContent("<img onerror=alert(1) src=x>Test Content");
+    resultNote.setUserId(userId);
+    resultNote.setCreatedAt(LocalDateTime.now());
+    resultNote.setUpdatedAt(LocalDateTime.now());
 
-    when(noteRepository.save(any(Note.class))).thenReturn(sanitizedNote);
+    when(noteRepository.save(any(Note.class))).thenReturn(resultNote);
 
     Note result = noteService.createNote(noteRequest, userId);
 
-    assertThat(result.getTitle()).isEqualTo("Test Title");
-    assertThat(result.getContent()).isEqualTo("Test Content");
+    assertThat(result.getTitle()).isEqualTo("<script>alert('xss')</script> Title");
+    assertThat(result.getContent()).isEqualTo("<img onerror=alert(1) src=x>Test Content");
+  }
+
+  @Test
+  void createNotePreservesInequalitySigns() {
+    noteRequest.setTitle("2 < 3");
+    noteRequest.setContent("if (x < y) return true;");
+
+    Note resultNote = new Note();
+    resultNote.setId(1L);
+    resultNote.setTitle("2 < 3");
+    resultNote.setContent("if (x < y) return true;");
+    resultNote.setUserId(userId);
+    resultNote.setCreatedAt(LocalDateTime.now());
+    resultNote.setUpdatedAt(LocalDateTime.now());
+
+    when(noteRepository.save(any(Note.class))).thenReturn(resultNote);
+
+    Note result = noteService.createNote(noteRequest, userId);
+
+    assertThat(result.getTitle()).isEqualTo("2 < 3");
+    assertThat(result.getContent()).isEqualTo("if (x < y) return true;");
+  }
+
+  @Test
+  void createNoteNormalizesTitleWhitespace() {
+    noteRequest.setTitle("  Hello   World  ");
+
+    Note resultNote = new Note();
+    resultNote.setId(1L);
+    resultNote.setTitle("Hello World");
+    resultNote.setContent("Test Content");
+    resultNote.setUserId(userId);
+    resultNote.setCreatedAt(LocalDateTime.now());
+    resultNote.setUpdatedAt(LocalDateTime.now());
+
+    when(noteRepository.save(any(Note.class))).thenReturn(resultNote);
+
+    Note result = noteService.createNote(noteRequest, userId);
+
+    assertThat(result.getTitle()).isEqualTo("Hello World");
+  }
+
+  @Test
+  void createNotePreservesContentFormatting() {
+    noteRequest.setContent("  leading spaces\n\nparagraph\n\n");
+
+    Note resultNote = new Note();
+    resultNote.setId(1L);
+    resultNote.setTitle("Test Title");
+    resultNote.setContent("  leading spaces\n\nparagraph\n\n");
+    resultNote.setUserId(userId);
+    resultNote.setCreatedAt(LocalDateTime.now());
+    resultNote.setUpdatedAt(LocalDateTime.now());
+
+    when(noteRepository.save(any(Note.class))).thenReturn(resultNote);
+
+    Note result = noteService.createNote(noteRequest, userId);
+
+    assertThat(result.getContent()).isEqualTo("  leading spaces\n\nparagraph\n\n");
+  }
+
+  @Test
+  void createNoteNormalizesLineEndings() {
+    noteRequest.setContent("line1\r\nline2\rline3\nline4");
+
+    Note resultNote = new Note();
+    resultNote.setId(1L);
+    resultNote.setTitle("Test Title");
+    resultNote.setContent("line1\nline2\nline3\nline4");
+    resultNote.setUserId(userId);
+    resultNote.setCreatedAt(LocalDateTime.now());
+    resultNote.setUpdatedAt(LocalDateTime.now());
+
+    when(noteRepository.save(any(Note.class))).thenReturn(resultNote);
+
+    Note result = noteService.createNote(noteRequest, userId);
+
+    assertThat(result.getContent()).isEqualTo("line1\nline2\nline3\nline4");
   }
 
   @Test

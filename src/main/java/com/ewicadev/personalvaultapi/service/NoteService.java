@@ -10,8 +10,20 @@ import com.ewicadev.personalvaultapi.dto.note.NoteRequest;
 import com.ewicadev.personalvaultapi.entity.Note;
 import com.ewicadev.personalvaultapi.exception.ResourceNotFoundException;
 import com.ewicadev.personalvaultapi.repository.NoteRepository;
-import com.ewicadev.personalvaultapi.util.HtmlSanitizerUtil;
+import com.ewicadev.personalvaultapi.util.TextUtil;
 
+/**
+ * Service for managing user notes.
+ * 
+ * <p>Notes are stored as plain text, not HTML. Users can store content like
+ * "2 &lt; 3" or code snippets without restriction.
+ * 
+ * <p>XSS protection is handled at render time by the frontend:
+ * <ul>
+ *   <li>Escape output when displaying note content</li>
+ *   <li>Use CSS {@code white-space: pre-wrap} to preserve formatting</li>
+ * </ul>
+ */
 @Service
 public class NoteService {
 
@@ -23,8 +35,8 @@ public class NoteService {
 
   public Note createNote(NoteRequest request, Long userId) {
     Note note = new Note();
-    note.setTitle(HtmlSanitizerUtil.sanitize(request.getTitle()));
-    note.setContent(HtmlSanitizerUtil.sanitize(request.getContent()));
+    note.setTitle(TextUtil.normalizeTitle(request.getTitle()));
+    note.setContent(TextUtil.normalizeContent(request.getContent()));
     note.setUserId(userId);
     
     return noteRepository.save(note);
@@ -34,8 +46,8 @@ public class NoteService {
     Note existingNote = noteRepository.findByIdAndUserId(id, userId)
         .orElseThrow(() -> new ResourceNotFoundException("Note not found with ID: " + id));
 
-    existingNote.setTitle(HtmlSanitizerUtil.sanitize(request.getTitle()));
-    existingNote.setContent(HtmlSanitizerUtil.sanitize(request.getContent()));
+    existingNote.setTitle(TextUtil.normalizeTitle(request.getTitle()));
+    existingNote.setContent(TextUtil.normalizeContent(request.getContent()));
 
     return noteRepository.save(existingNote);
   }
