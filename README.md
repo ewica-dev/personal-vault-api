@@ -1,6 +1,18 @@
 # Personal Vault API
 
-A Spring Boot REST API for personal note management with authentication.
+A Spring Boot REST API for personal note management with JWT-based authentication.
+
+## Purpose
+
+This project was created as a **portfolio project** to practice and demonstrate skills in:
+- Building RESTful APIs with Spring Boot
+- JWT authentication and authorization
+- PostgreSQL database integration with JPA/Hibernate
+- Secure password handling with BCrypt
+- Docker containerization
+- Test-driven development with JUnit 5
+
+It serves as a practical demonstration of backend development skills including API design, security implementation, database modelling, and deployment configuration.
 
 ## Technology Stack
 
@@ -115,6 +127,15 @@ All other endpoints require a valid JWT token in the Authorization header:
 ```
 Authorization: Bearer <token>
 ```
+
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/api/v1/notes` | Create a new note |
+| GET | `/api/v1/notes` | Get all notes (paginated) |
+| GET | `/api/v1/notes/{id}` | Get a specific note |
+| PUT | `/api/v1/notes/{id}` | Update a note |
+| DELETE | `/api/v1/notes/{id}` | Delete a note |
+| GET | `/api/v1/admin/test` | Admin test endpoint |
 
 ## Testing
 
