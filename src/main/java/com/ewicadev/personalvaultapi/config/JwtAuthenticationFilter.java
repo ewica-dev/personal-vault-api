@@ -2,8 +2,10 @@ package com.ewicadev.personalvaultapi.config;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
@@ -42,13 +44,18 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     try {
       String jwt = authHeader.substring(7);
       String userEmail = jwtService.extractEmail(jwt);
+      String role = jwtService.extractRole(jwt);
 
       if (userEmail != null
           && SecurityContextHolder.getContext().getAuthentication() == null
           && jwtService.isTokenValid(jwt, userEmail)) {
 
+        var authorities = role != null 
+            ? java.util.Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + role))
+            : new ArrayList<SimpleGrantedAuthority>();
+
         UsernamePasswordAuthenticationToken authToken =
-            new UsernamePasswordAuthenticationToken(userEmail, null, new ArrayList<>());
+            new UsernamePasswordAuthenticationToken(userEmail, null, (Collection<SimpleGrantedAuthority>) authorities);
 
         authToken.setDetails(
             new WebAuthenticationDetailsSource().buildDetails(request)

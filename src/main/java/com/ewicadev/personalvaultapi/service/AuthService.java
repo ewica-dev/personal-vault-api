@@ -7,6 +7,7 @@ import com.ewicadev.personalvaultapi.dto.auth.LoginRequest;
 import com.ewicadev.personalvaultapi.dto.auth.LoginResponse;
 import com.ewicadev.personalvaultapi.dto.auth.SignupRequest;
 import com.ewicadev.personalvaultapi.dto.auth.SignupResponse;
+import com.ewicadev.personalvaultapi.entity.Role;
 import com.ewicadev.personalvaultapi.entity.User;
 import com.ewicadev.personalvaultapi.exception.DuplicateResourceException;
 import com.ewicadev.personalvaultapi.exception.InvalidCredentialsException;
@@ -37,6 +38,7 @@ public class AuthService {
     User user = new User();
     user.setEmail(request.getEmail());
     user.setPassword(passwordEncoder.encode(request.getPassword()));
+    user.setRole(Role.USER);
 
     User savedUser = userRepository.save(user);
     return new SignupResponse(
@@ -55,7 +57,7 @@ public class AuthService {
       throw new InvalidCredentialsException("Invalid email or password");
     }
 
-    String token = jwtService.generateToken(user.getEmail());
+    String token = jwtService.generateToken(user.getEmail(), user.getRole().name());
     return LoginResponse.builder()
         .token(token)
         .tokenType("Bearer")

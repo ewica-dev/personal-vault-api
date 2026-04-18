@@ -98,7 +98,7 @@ class AuthServiceTest {
 
     when(userRepository.findByEmail(loginRequest.getEmail())).thenReturn(Optional.of(user));
     when(passwordEncoder.matches(loginRequest.getPassword(), user.getPassword())).thenReturn(true);
-    when(jwtService.generateToken(user.getEmail())).thenReturn(jwtToken);
+    when(jwtService.generateToken(user.getEmail(), user.getRole().name())).thenReturn(jwtToken);
 
     LoginResponse result = authService.login(loginRequest);
 
@@ -107,7 +107,7 @@ class AuthServiceTest {
     assertThat(result.getTokenType()).isEqualTo("Bearer");
     verify(userRepository).findByEmail(loginRequest.getEmail());
     verify(passwordEncoder).matches(loginRequest.getPassword(), user.getPassword());
-    verify(jwtService).generateToken(user.getEmail());
+    verify(jwtService).generateToken(user.getEmail(), user.getRole().name());
   }
 
   @Test
