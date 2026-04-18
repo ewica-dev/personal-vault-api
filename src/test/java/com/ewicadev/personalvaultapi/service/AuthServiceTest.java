@@ -120,7 +120,7 @@ class AuthServiceTest {
 
     verify(userRepository).findByEmail(loginRequest.getEmail());
     verify(passwordEncoder, never()).matches(anyString(), anyString());
-    verify(jwtService, never()).generateToken(anyString());
+    verify(jwtService, never()).generateToken(anyString(), anyString());
   }
 
   @Test
@@ -134,6 +134,6 @@ class AuthServiceTest {
 
     verify(userRepository).findByEmail(loginRequest.getEmail());
     verify(passwordEncoder).matches(loginRequest.getPassword(), user.getPassword());
-    verify(jwtService, never()).generateToken(anyString());
+    verify(jwtService, never()).generateToken(anyString(), anyString());
   }
 }
