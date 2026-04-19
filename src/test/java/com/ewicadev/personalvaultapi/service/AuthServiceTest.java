@@ -26,6 +26,7 @@ import com.ewicadev.personalvaultapi.dto.auth.ResendVerificationResponse;
 import com.ewicadev.personalvaultapi.dto.auth.SignupRequest;
 import com.ewicadev.personalvaultapi.dto.auth.VerifyEmailRequest;
 import com.ewicadev.personalvaultapi.dto.auth.VerifyEmailResponse;
+import com.ewicadev.personalvaultapi.entity.EmailJobRepository;
 import com.ewicadev.personalvaultapi.entity.EmailVerificationToken;
 import com.ewicadev.personalvaultapi.entity.User;
 import com.ewicadev.personalvaultapi.exception.DuplicateResourceException;
@@ -49,13 +50,13 @@ class AuthServiceTest {
   private EmailVerificationTokenRepository tokenRepository;
 
   @Mock
+  private EmailJobRepository emailJobRepository;
+
+  @Mock
   private PasswordEncoder passwordEncoder;
 
   @Mock
   private JwtService jwtService;
-
-  @Mock
-  private EmailService emailService;
 
   @InjectMocks
   private AuthService authService;

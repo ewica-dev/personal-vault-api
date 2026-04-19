@@ -10,8 +10,6 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import com.ewicadev.personalvaultapi.dto.auth.LoginRequest;
 import com.ewicadev.personalvaultapi.dto.auth.LoginResponse;
@@ -20,9 +18,12 @@ import com.ewicadev.personalvaultapi.dto.auth.SignupRequest;
 import com.ewicadev.personalvaultapi.dto.auth.SignupResponse;
 import com.ewicadev.personalvaultapi.dto.auth.VerifyEmailRequest;
 import com.ewicadev.personalvaultapi.dto.auth.VerifyEmailResponse;
+import com.ewicadev.personalvaultapi.entity.EmailJob;
+import com.ewicadev.personalvaultapi.entity.EmailJobStatus;
 import com.ewicadev.personalvaultapi.entity.EmailVerificationToken;
 import com.ewicadev.personalvaultapi.entity.Role;
 import com.ewicadev.personalvaultapi.entity.User;
+import com.ewicadev.personalvaultapi.entity.EmailJobRepository;
 import com.ewicadev.personalvaultapi.exception.DuplicateResourceException;
 import com.ewicadev.personalvaultapi.exception.EmailNotVerifiedException;
 import com.ewicadev.personalvaultapi.exception.InvalidCredentialsException;
@@ -41,22 +42,22 @@ public class AuthService {
 
   private final UserRepository userRepository;
   private final EmailVerificationTokenRepository tokenRepository;
+  private final EmailJobRepository emailJobRepository;
   private final PasswordEncoder passwordEncoder;
   private final JwtService jwtService;
-  private final EmailService emailService;
 
   public AuthService(
       UserRepository userRepository,
       EmailVerificationTokenRepository tokenRepository,
+      EmailJobRepository emailJobRepository,
       PasswordEncoder passwordEncoder,
-      JwtService jwtService,
-      EmailService emailService
+      JwtService jwtService
   ) {
     this.userRepository = userRepository;
     this.tokenRepository = tokenRepository;
+    this.emailJobRepository = emailJobRepository;
     this.passwordEncoder = passwordEncoder;
     this.jwtService = jwtService;
-    this.emailService = emailService;
   }
 
   @Transactional
@@ -86,9 +87,9 @@ public class AuthService {
     EmailVerificationToken token = createToken(savedUser, otpHash);
     tokenRepository.save(token);
 
-    registerEmailSynchronization(normalizedEmail, otp);
+    createEmailJob(normalizedEmail, otp, token.getExpiresAt().atZone(java.time.ZoneId.systemDefault()).toInstant());
 
-    log.info("User registered, verification email sent: {}", maskEmail(normalizedEmail));
+    log.info("User registered, verification email queued: {}", maskEmail(normalizedEmail));
     return new SignupResponse(
         "User registered successfully. Please verify your email.",
         savedUser.getId(),
@@ -135,9 +136,9 @@ public class AuthService {
     EmailVerificationToken newToken = createToken(user, otpHash);
     tokenRepository.save(newToken);
 
-    registerEmailSynchronization(normalizedEmail, otp);
+    createEmailJob(normalizedEmail, otp, newToken.getExpiresAt().atZone(java.time.ZoneId.systemDefault()).toInstant());
 
-    log.info("Verification email resent: {}", maskEmail(normalizedEmail));
+    log.info("Verification email queued for resend: {}", maskEmail(normalizedEmail));
     return new ResendVerificationResponse(
         "If the account exists and is not already verified, a verification email has been sent."
     );
@@ -245,17 +246,16 @@ public class AuthService {
     return token;
   }
 
-  private void registerEmailSynchronization(String email, String otp) {
-    if (TransactionSynchronizationManager.isSynchronizationActive()) {
-      TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-        @Override
-        public void afterCommit() {
-          emailService.sendVerificationEmail(email, otp);
-        }
-      });
-    } else {
-      emailService.sendVerificationEmail(email, otp);
-    }
+  private void createEmailJob(String email, String otp, java.time.Instant expiresAt) {
+    EmailJob job = new EmailJob();
+    job.setEmail(email);
+    job.setOtpCode(otp);
+    job.setExpiresAt(expiresAt);
+    job.setStatus(EmailJobStatus.PENDING);
+    job.setAttemptCount(0);
+    job.setCreatedAt(java.time.Instant.now());
+    emailJobRepository.save(job);
+    log.debug("Created EmailJob for {} in same transaction", email);
   }
 
   private SignupResponse handleResendFlow(User user) {
@@ -264,9 +264,9 @@ public class AuthService {
     EmailVerificationToken token = createToken(user, otpHash);
     tokenRepository.save(token);
 
-    registerEmailSynchronization(user.getEmail(), otp);
+    createEmailJob(user.getEmail(), otp, token.getExpiresAt().atZone(java.time.ZoneId.systemDefault()).toInstant());
 
-    log.info("Existing unverified user - verification email resent: {}", maskEmail(user.getEmail()));
+    log.info("Existing unverified user - verification email queued: {}", maskEmail(user.getEmail()));
     return new SignupResponse(
         "User registered successfully. Please verify your email.",
         user.getId(),
