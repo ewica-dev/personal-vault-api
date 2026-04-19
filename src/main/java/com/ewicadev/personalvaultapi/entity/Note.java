@@ -3,6 +3,7 @@ package com.ewicadev.personalvaultapi.entity;
 import java.time.LocalDateTime;
 
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -11,6 +12,8 @@ import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import lombok.Data;
+
+import com.ewicadev.personalvaultapi.persistence.NoteEncryptionConverter;
 
 @Data
 @Entity(name = "notes")
@@ -25,6 +28,7 @@ public class Note {
   private String title;
 
   @Column(nullable = false, columnDefinition = "TEXT")
+  @Convert(converter = NoteEncryptionConverter.class)
   private String content;
 
   @Column(name = "user_id", nullable = false)
