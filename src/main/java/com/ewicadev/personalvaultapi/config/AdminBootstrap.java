@@ -54,6 +54,7 @@ public class AdminBootstrap implements CommandLineRunner {
     admin.setEmail(adminEmail);
     admin.setPassword(passwordEncoder.encode(adminPassword));
     admin.setRole(Role.ADMIN);
+    admin.setEmailVerified(true);
 
     userRepository.save(admin);
     log.info("Admin user created: {}", adminEmail);

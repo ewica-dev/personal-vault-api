@@ -12,9 +12,9 @@ public class SignupResponse {
   private String message;
   private UserResponse user;
 
-  public SignupResponse(String message, Long id, String email, LocalDateTime createdAt) {
+  public SignupResponse(String message, Long id, String email, LocalDateTime createdAt, boolean emailVerified) {
     this.message = message;
-    this.user = new UserResponse(id, email, createdAt);
+    this.user = new UserResponse(id, email, createdAt, emailVerified);
   }
 
   @Data
@@ -23,5 +23,6 @@ public class SignupResponse {
     private Long id;
     private String email;
     private LocalDateTime createdAt;
+    private boolean emailVerified;
   }
 }

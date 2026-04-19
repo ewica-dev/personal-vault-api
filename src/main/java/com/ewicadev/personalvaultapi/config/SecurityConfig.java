@@ -38,6 +38,7 @@ public class SecurityConfig {
       )
       .authorizeHttpRequests(auth -> auth
         .requestMatchers("/api/v1/auth/login", "/api/v1/auth/signup").permitAll()
+        .requestMatchers("/api/v1/auth/verify-email", "/api/v1/auth/resend-verification").permitAll()
         .requestMatchers("/api/health").permitAll()
         .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
         .anyRequest().authenticated()

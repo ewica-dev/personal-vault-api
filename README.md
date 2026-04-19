@@ -49,11 +49,11 @@ It serves as a practical demonstration of backend development skills including A
 | `DB_PASSWORD` | Database password | (required) |
 | `JWT_SECRET` | JWT signing secret | (required) |
 | `JWT_EXPIRATION_MS` | JWT token expiration in milliseconds | `900000` |
-| `MAIL_HOST` | SMTP mail host | `smtp.mailtrap.io` |
-| `MAIL_PORT` | SMTP mail port | `2525` |
+| `MAIL_HOST` | SMTP mail host | `smtp-relay.brevo.com` |
+| `MAIL_PORT` | SMTP mail port | `587` |
 | `MAIL_USERNAME` | SMTP username | (required) |
 | `MAIL_PASSWORD` | SMTP password | (required) |
-| `MAIL_FROM` | From address for emails | `noreply@personalvault.local` |
+| `MAIL_FROM` | From address for emails | (required) |
 
 **Note**: The `.env` file contains default development values. Copy `application.properties.example` and configure appropriately for production.
 
@@ -112,12 +112,14 @@ The application runs on `http://localhost:8080`.
 
 ## API Endpoints
 
-### Public Endpoints
+### Public Endpoints (No Authentication Required)
 
 | Method | Path | Description |
 |--------|------|-------------|
-| POST | `/api/v1/auth/signup` | Register new user |
-| POST | `/api/v1/auth/login` | Login and get JWT token |
+| POST | `/api/v1/auth/signup` | Register new user (sends verification email) |
+| POST | `/api/v1/auth/login` | Login and get JWT token (requires verified email) |
+| POST | `/api/v1/auth/verify-email` | Verify email with OTP |
+| POST | `/api/v1/auth/resend-verification` | Resend verification email |
 | GET | `/api/health` | Health check |
 
 ### Protected Endpoints
@@ -148,9 +150,15 @@ Run all tests:
 ### Test Suites
 
 - `PersonalVaultApiApplicationTests` - Spring context loading test
-- `AuthServiceTest` - Authentication service unit tests (register, login)
+- `AuthServiceTest` - Authentication service unit tests (register, login, verify, resend)
+- `AuthControllerTest` - Authentication controller tests
 - `NoteServiceTest` - Note service unit tests (CRUD operations, text normalization)
-- `TextUtilTest` - Text utility unit tests (title normalization, content normalization)
+- `NoteControllerTest` - Note controller tests
+- `AdminControllerTest` - Admin controller tests
+- `RateLimitServiceTest` - Rate limiting tests
+- `OtpGeneratorTest` - OTP generation tests
+- `OtpHasherTest` - OTP hashing tests
+- `PasswordValidatorTest` - Password validation tests
 
 ### Test Results
 
@@ -185,10 +193,44 @@ personal-vault-api/
 └── .env
 ```
 
+## Email OTP Verification
+
+This project implements email OTP verification for user signup using Brevo SMTP.
+
+### Verification Flow
+
+1. **User Signup**: User submits email and password
+   - User is created with `emailVerified = false`
+   - 6-digit OTP is generated and sent to user email
+   - User cannot login until email is verified
+
+2. **Verify Email**: User submits OTP to verify their email
+   - OTP is validated (6-digit, expires in 10 minutes, max 5 attempts)
+   - On success: `emailVerified = true`, user can login
+
+3. **Resend Verification**: User can request a new OTP
+   - 60-second cooldown between requests
+   - Rate limited to prevent abuse
+
+### Security Features
+
+- **Password Validation**: 8-50 characters with uppercase, lowercase, digit, and special character
+- **BCrypt Hashing**: Passwords and OTPs are hashed with BCrypt (work factor 10)
+- **Rate Limiting**: Per-IP and per-email limits using Caffeine cache
+- **Account Enumeration Protection**: Generic responses prevent email enumeration
+- **Timing Attack Mitigation**: Dummy BCrypt work normalizes response times
+- **Transaction Safety**: Emails sent only after DB transaction commits
+
+### Login Requirements
+
+- Users must verify their email before they can login
+- Unverified users receive HTTP 403 Forbidden with message "Email not verified"
+
 ## Notes
 
 - The application uses JWT tokens for authentication
 - Password encoding uses BCrypt
+- OTP hashing uses BCrypt with work factor 10
 - Hibernate DDL auto is set to `update`
 - Security is stateless (no session)
 - CSRF protection is disabled
@@ -198,6 +240,6 @@ personal-vault-api/
 
 - No Dockerfile provided for containerizing the application
 - No production Docker Compose configuration (only PostgreSQL)
-- Mail configuration requires external SMTP service
 - No API documentation endpoint (e.g., Swagger/OpenAPI)
 - No database migration tool (Flyway/Liquibase)
+- In-memory rate limiting (Redis recommended for production)

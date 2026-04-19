@@ -40,6 +40,8 @@ dependencies {
   runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.13.0'
   // Stripe dependency
   implementation 'com.stripe:stripe-java:28.2.0'
+  // Rate limiting
+  implementation 'com.github.ben-manes.caffeine:caffeine:3.1.8'
 }
 
 tasks.named('test') {

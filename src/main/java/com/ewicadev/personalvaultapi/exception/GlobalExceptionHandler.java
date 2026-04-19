@@ -257,6 +257,22 @@ public class GlobalExceptionHandler {
     return new ResponseEntity<>(errorRes, HttpStatus.UNAUTHORIZED);
   }
 
+  @ExceptionHandler(EmailNotVerifiedException.class)
+  public ResponseEntity<ErrorResponse> handleEmailNotVerified(
+      EmailNotVerifiedException ex, HttpServletRequest request) {
+    
+    ErrorResponse errorRes = ErrorResponse.builder()
+        .timestamp(LocalDateTime.now())
+        .status(HttpStatus.FORBIDDEN.value())
+        .error("Email Not Verified")
+        .errorCode("EMAIL_NOT_VERIFIED")
+        .message("Email not verified. Please verify your email to login.")
+        .path(request.getRequestURI())
+        .build();
+
+    return new ResponseEntity<>(errorRes, HttpStatus.FORBIDDEN);
+  }
+
   @ExceptionHandler(RuntimeException.class)
   public ResponseEntity<ErrorResponse> handleRuntimeException(
       RuntimeException ex, HttpServletRequest request) {
