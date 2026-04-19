@@ -11,6 +11,7 @@ This project was created as a **portfolio project** to practice and demonstrate 
 - Secure password handling with BCrypt
 - Docker containerization
 - Test-driven development with JUnit 5
+- Background job processing with email queuing
 
 It serves as a practical demonstration of backend development skills including API design, security implementation, database modelling, and deployment configuration.
 
@@ -29,9 +30,11 @@ It serves as a practical demonstration of backend development skills including A
 - Spring Boot Starter Validation
 - Spring Boot Starter Web MVC
 - Spring Boot Starter Mail
+- Spring Boot Starter Actuator
 - PostgreSQL driver
-- jjwt (JWT token handling)
-- Stripe Java client
+- jjwt 0.13.0 (JWT token handling)
+- Stripe Java client 28.2.0
+- Caffeine 3.1.8 (rate limiting)
 - Lombok
 
 ## Prerequisites
@@ -156,9 +159,12 @@ Run all tests:
 - `NoteControllerTest` - Note controller tests
 - `AdminControllerTest` - Admin controller tests
 - `RateLimitServiceTest` - Rate limiting tests
+- `JwtServiceTest` - JWT service tests
 - `OtpGeneratorTest` - OTP generation tests
 - `OtpHasherTest` - OTP hashing tests
 - `PasswordValidatorTest` - Password validation tests
+- `EmailJobWorkerTest` - Email job worker tests
+- `EmailJobCleanupServiceTest` - Email job cleanup tests
 
 ### Test Results
 
@@ -171,22 +177,22 @@ personal-vault-api/
 ├── src/
 │   ├── main/
 │   │   ├── java/com/ewicadev/personalvaultapi/
-│   │   │   ├── config/         # Security, JWT, authentication config
-│   │   │   ├── controller/     # REST controllers
-│   │   │   ├── dto/            # Data transfer objects
-│   │   │   ├── entity/         # JPA entities
-│   │   │   ├── exception/     # Exception handling
-│   │   │   ├── health/        # Health endpoints
-│   │   │   ├── repository/     # Data repositories
-│   │   │   ├── service/       # Business logic
-│   │   │   ├── util/          # Utilities
-│   │   │   └── validation/    # Custom validation
+│   │   │   ├── config/           # Security, JWT, authentication config
+│   │   │   ├── controller/      # REST controllers (Auth, Note, Admin, Health)
+│   │   │   ├── dto/             # Data transfer objects
+│   │   │   ├── entity/          # JPA entities (User, Note, EmailJob, EmailVerificationToken)
+│   │   │   ├── exception/       # Exception handling
+│   │   │   ├── health/          # Health endpoints
+│   │   │   ├── repository/      # Data repositories
+│   │   │   ├── service/         # Business logic (Auth, Note, Jwt, RateLimit, Email, EmailJob)
+│   │   │   ├── util/            # Utilities (OtpGenerator, OtpHasher, TextUtil)
+│   │   │   └── validation/       # Custom validation (PasswordValidator)
 │   │   └── resources/
 │   │       ├── application.properties
 │   │       ├── application-local.properties
 │   │       └── application.properties.example
 │   └── test/
-│       └── java/.../          # Test classes
+│       └── java/.../            # Test classes
 ├── build.gradle
 ├── docker-compose.yml
 ├── gradlew
@@ -225,6 +231,15 @@ This project implements email OTP verification for user signup using Brevo SMTP.
 
 - Users must verify their email before they can login
 - Unverified users receive HTTP 403 Forbidden with message "Email not verified"
+
+## Background Email Processing
+
+The application uses a background job system for sending emails:
+
+- **EmailJob**: Queue table for pending emails (status: PENDING, SENT, FAILED)
+- **EmailJobWorker**: Scheduled task that processes queued emails
+- **EmailJobCleanupService**: Cleans up old failed/expired email jobs
+- Failure classification: RETRYABLE, NON_RETRYABLE, UNKNOWN
 
 ## Notes
 
